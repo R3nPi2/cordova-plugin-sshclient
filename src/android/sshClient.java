@@ -11,11 +11,8 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.PluginResult;
 
 import android.util.Log;
-//import android.provider.Settings;
-//import android.widget.Toast;
 import android.app.Activity;
 import android.content.Context;
-//import android.os.Environment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -297,7 +294,7 @@ public class sshClient extends CordovaPlugin {
             try {
               database.addHostkeys(knownHostFile);
             } catch (IOException e) {
-              Log.v(TAG,"sshVerifyHost error: "+e.toString());
+              Log.v(TAG,"sshVerifyHost error1: "+e.toString());
             }
           } 
 
@@ -319,12 +316,51 @@ public class sshClient extends CordovaPlugin {
 
             conn.close();
 
-          } catch (IOException e) {
+          } catch (IOException e2) {
 
-            Log.v(TAG,"sshVerifyHost error: "+e.getMessage());
-            PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
-            result.setKeepCallback(true);
-            callbackContext.sendPluginResult(result);
+            //We are going to try verify 3 times becuse I get error: Illegal packet size (1869636974) so often.
+
+            Log.v(TAG,"sshVerifyHost error2: "+e2.getMessage());
+            //PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+            //result.setKeepCallback(true);
+            //callbackContext.sendPluginResult(result);
+
+            try {   
+
+              conn.connect(new AdvancedVerifier());
+  
+              PluginResult result = new PluginResult(PluginResult.Status.OK, verifyMsg);
+              result.setKeepCallback(true);
+              callbackContext.sendPluginResult(result);
+
+              conn.close();
+
+            } catch (IOException e3) {
+
+              Log.v(TAG,"sshVerifyHost error3: "+e3.getMessage());
+              //PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+              //result.setKeepCallback(true);
+              //callbackContext.sendPluginResult(result);
+              try {   
+
+                conn.connect(new AdvancedVerifier());
+
+                PluginResult result = new PluginResult(PluginResult.Status.OK, verifyMsg);
+                result.setKeepCallback(true);
+                callbackContext.sendPluginResult(result);
+
+                conn.close();
+
+              } catch (IOException e4) {
+
+                Log.v(TAG,"sshVerifyHost error4: "+e4.getMessage());
+                PluginResult result = new PluginResult(PluginResult.Status.ERROR, e4.getMessage());
+                result.setKeepCallback(true);
+                callbackContext.sendPluginResult(result);
+
+              }
+
+            }
 
           }
 
@@ -348,7 +384,7 @@ public class sshClient extends CordovaPlugin {
         }
         catch (IOException e)
         {
-          Log.v(TAG,"sshOpenSession error: "+e.toString());
+          Log.v(TAG,"sshOpenSession error1: "+e.toString());
         }
       }
 
@@ -361,8 +397,8 @@ public class sshClient extends CordovaPlugin {
         public void run() {
           try {
             conn = new Connection(hostname);
-            conn.setTCPNoDelay(true);
             conn.connect();
+            conn.setTCPNoDelay(true);
             boolean isAuthenticated = conn.authenticateWithPassword(username, password);
             if (isAuthenticated == false) {
               PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Authentication failed");
@@ -381,7 +417,7 @@ public class sshClient extends CordovaPlugin {
                 result.setKeepCallback(true);
                 callbackContext.sendPluginResult(result);
               } catch (Exception e) {
-                Log.v(TAG,"sshOpenSession error: \n"+e.toString());
+                Log.v(TAG,"sshOpenSession error2: \n"+e.toString());
                 PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
                 result.setKeepCallback(true);
                 callbackContext.sendPluginResult(result);
@@ -391,7 +427,7 @@ public class sshClient extends CordovaPlugin {
             PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
             result.setKeepCallback(true);
             callbackContext.sendPluginResult(result);
-            Log.v(TAG,"sshOpenSession error: "+e.toString());
+            Log.v(TAG,"sshOpenSession error3: "+e.toString());
           }
           PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Unknown error");
           result.setKeepCallback(true);
