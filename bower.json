@@ -12,6 +12,9 @@
     "type" : "git",
     "url" : "git://github.com/R3nPi2/cordova-plugin-sshclient.git"
   },  
+  {
+    "directory": "plugins"
+  },
   "keywords": [
     "cordova",
     "ssh",
