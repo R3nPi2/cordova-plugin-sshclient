@@ -1,6 +1,6 @@
 # Cordova SSH Client Plugin
 
-A Cordova SSH Client Plugin based on Ganymed SSH2
+A Cordova SSH Client Plugin based on Ganymed SSH2.
 
 ## Supported Platforms
 
