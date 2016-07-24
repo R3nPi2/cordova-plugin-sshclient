@@ -9,7 +9,7 @@
   "main": "www/sshClient.js",
   "license": "SEE LICENSE FILE",
   "repository" : { 
-    "type" : "git"
+    "type" : "git",
     "url" : "git://github.com/R3nPi2/cordova-plugin-sshclient.git"
   },  
   "keywords": [
