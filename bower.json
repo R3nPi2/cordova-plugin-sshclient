@@ -1,0 +1,32 @@
+{
+  "name": "cordova-plugin-sshclient",
+  "version": "0.1.1",
+  "homepage": "https://github.com/R3nPi2/cordova-plugin-sshclient",
+  "authors": [
+    { "name" : "R3n Pi2", "email" : "r3npi2@gmail.com", "homepage" : "https://github.com/R3nPi2/" }
+  ],
+  "description": "A Cordova SSH Client Plugin based on Ganymed SSH2",
+  "main": "www/sshClient.js",
+  "license": "SEE LICENSE FILE",
+  "repository" : { 
+    "type" : "git"
+    "url" : "git://github.com/R3nPi2/cordova-plugin-sshclient.git"
+  },  
+  "keywords": [
+    "cordova",
+    "ssh",
+    "ssh",
+    "client",
+    "cordova",
+    "plugin",
+    "android",
+    "ssh"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

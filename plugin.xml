@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="cordova-plugin-sshclient"
+    version="0.1.1">
+    <name>Cordova SSH Client Plugin</name>
+    <description>A Cordova SSH Client Plugin based on Ganymed SSH2.</description>
+    <license>GNU AFFERO GENERAL PUBLIC LICENSE v3</license>
+    <keywords>cordova,ssh,ssh client</keywords>
+    <author>R3n Pi2 - r3npi2@gmail.com</author>
+    <repo>https://github.com/R3nPi2/cordova-plugin-sshclient.git</repo>
+    <issue>https://github.com/R3nPi2/cordova-plugin-sshclient/issues</issue>
+    <engines>
+      <engine name="cordova" version="&gt;=1.7.0" />
+      <engine name="cordova-android" version="&gt;=1.8.0" />
+    </engines>
+    <js-module src="www/sshClient.js" name="sshClient">
+        <clobbers target="sshClient" />
+    </js-module>
+    <!-- android -->
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="sshClient" >
+                <param name="android-package" value="sshClient"/>
+            </feature>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+          <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+          <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+        </config-file>
+        <source-file src="src/android/libs/ssh2.jar" target-dir="libs" />
+        <source-file src="src/android/sshClient.java" target-dir="src/" />
+    </platform>
+</plugin>
