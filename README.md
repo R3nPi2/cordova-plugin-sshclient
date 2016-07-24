@@ -6,21 +6,21 @@ A Cordova SSH Client Plugin based on Ganymed SSH2.
 
   - Android
 
-#Recomended
+##Recomended
 
 If you're going to use this plugin inside an AngularJS project, we recomend you to install **Angular SSH Client** from [here](https://github.com/R3nPi2/angular-ssh).
 
-### Example
+## Example
 
 Take a look at the example on [Angular SSH Client project](https://github.com/R3nPi2/angular-ssh).
 
-### Installation
+## Installation
 
   - `cordova plugin add https://github.com/R3nPi2/cordova-plugin-sshclient.git`
 
-### Methods
+## Methods
 
-#### `window.sshClient.sshOpenSession(function(success){...},function(error){...},hostname,username,password,cols,rows)`
+### `window.sshClient.sshOpenSession(function(success){...},function(error){...},hostname,username,password,cols,rows)`
 
 Connects to host, request a new PTY and starts a Shell.
 
@@ -40,7 +40,7 @@ Connects to host, request a new PTY and starts a Shell.
 
   - Returns a string describing the error.
 
-#### `window.sshClient.sshVerifyHost(function(success){...},function(error){...},hostname,saveHostKey)`
+### `window.sshClient.sshVerifyHost(function(success){...},function(error){...},hostname,saveHostKey)`
 
 We should use this method to verify hostkeys.
 
@@ -60,7 +60,7 @@ We should use this method to verify hostkeys.
 
   - Returns a string describing the error.
 
-#### `window.sshClient.sshResizeWindow(function(success){...},function(error){...},cols,rows,width,height)`
+### `window.sshClient.sshResizeWindow(function(success){...},function(error){...},cols,rows,width,height)`
 
 We can use this method to resize PTY created on `window.sshClient.sshOpenSession`.
 
@@ -79,7 +79,7 @@ We can use this method to resize PTY created on `window.sshClient.sshOpenSession
 
   - Returns a string describing the error.
 
-#### `window.sshClient.sshRead(function(success){...},function(error){...})`
+### `window.sshClient.sshRead(function(success){...},function(error){...})`
 
 Read stdout and stderr buffers output.
 
@@ -91,7 +91,7 @@ Read stdout and stderr buffers output.
 
   - Returns a string describing the error.
 
-#### `window.sshClient.sshWrite(function(success){...},function(error){...},string)`
+### `window.sshClient.sshWrite(function(success){...},function(error){...},string)`
 
 Write a string to stdin buffer.
 
@@ -107,7 +107,7 @@ Write a string to stdin buffer.
 
   - Returns a string describing the error.
 
-#### `window.sshClient.sshCloseSession(function(success){...},function(error){...})`
+### `window.sshClient.sshCloseSession(function(success){...},function(error){...})`
 
 Close ssh session.
 
