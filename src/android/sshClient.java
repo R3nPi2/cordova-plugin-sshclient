@@ -393,6 +393,8 @@ public class sshClient extends CordovaPlugin {
       final String password = args.getString(2);
       x = Integer.parseInt(args.getString(3));
       y = Integer.parseInt(args.getString(4));
+      final Integer pixels_x = Integer.parseInt(args.getString(5));
+      final Integer pixels_y = Integer.parseInt(args.getString(6));
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
           try {
@@ -410,7 +412,7 @@ public class sshClient extends CordovaPlugin {
               out = sess.getStdin();
               err = sess.getStderr();
               try {
-                sess.requestPTY("vt100", x, y, 0, 0, null);
+                sess.requestPTY("vt100", x, y, pixels_x, pixels_y, null);
                 sess.startShell();
                 int conditions = sess.waitForCondition(ChannelCondition.STDOUT_DATA, 1000);
                 PluginResult result = new PluginResult(PluginResult.Status.OK, "0");

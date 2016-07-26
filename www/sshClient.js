@@ -9,8 +9,10 @@ var exec = require('cordova/exec');
 function sshClient() { 
 }
 
-sshClient.prototype.sshOpenSession = function(success,error,hostname,username,password,cols,rows){
-  exec(success,error,"sshClient",'sshOpenSession',[hostname,username,password,cols,rows]);
+sshClient.prototype.sshOpenSession = function(success,error,hostname,username,password,cols,rows,width,height){
+  var width = width || 0;
+  var height = height || 0;
+  exec(success,error,"sshClient",'sshOpenSession',[hostname,username,password,cols,rows,width,height]);
 }
 sshClient.prototype.sshCloseSession = function(success,error){
   exec(success,error,"sshClient",'sshCloseSession',[]);
@@ -24,10 +26,10 @@ sshClient.prototype.sshRead = function(success,error){
 sshClient.prototype.sshWrite = function(success,error,line){
   exec(success,error,"sshClient",'sshWrite',[line]);
 }
-sshClient.prototype.sshResizeWindow = function(success,error,x,y,pixels_x,pixels_y){
-  var p_x = pixels_x || 0;
-  var p_y = pixels_y || 0;
-  exec(success,error,"sshClient",'sshResizeWindow',[x,y,p_x,p_y]);
+sshClient.prototype.sshResizeWindow = function(success,error,cols,rows,width,height){
+  var width = width || 0;
+  var height = height || 0;
+  exec(success,error,"sshClient",'sshResizeWindow',[cols,rows,width,height]);
 }
 
 var sshClient = new sshClient();
