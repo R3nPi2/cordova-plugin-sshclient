@@ -20,7 +20,7 @@ Take a look at the example on [Angular SSH Client project](https://github.com/R3
 
 ## Methods
 
-### `window.sshClient.sshOpenSession(function(success){...},function(error){...},hostname,username,password,cols,rows)`
+### `window.sshClient.sshOpenSession(function(success){...},function(error){...},hostname,username,password,cols,rows,width,height)`
 
 Connects to host, request a new PTY and starts a Shell.
 
@@ -31,6 +31,8 @@ Connects to host, request a new PTY and starts a Shell.
   - `password` – Password.
   - `cols` – PTY columns.
   - `rows` – PTY rows.
+  - `width` – (optional: if empty, set to 0) PTY pixels width.
+  - `height` – (optional: if empty, set to 0) PTY pixels height.
 
 **Success response**
 
@@ -68,8 +70,8 @@ We can use this method to resize PTY created on `window.sshClient.sshOpenSession
 
   - `cols` – PTY columns.
   - `rows` – PTY rows.
-  - `width` – PTY pixels width. You can set it to 0 to ignore pixels width.
-  - `height` – PTY pixels height. You can set it to 0 to ignore pixels height.
+  - `width` – (optional: if empty, set to 0) PTY pixels width.
+  - `height` – (optional: if empty, set to 0) PTY pixels height.
 
 **Success response**
 
