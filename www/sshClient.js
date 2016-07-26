@@ -25,7 +25,9 @@ sshClient.prototype.sshWrite = function(success,error,line){
   exec(success,error,"sshClient",'sshWrite',[line]);
 }
 sshClient.prototype.sshResizeWindow = function(success,error,x,y,pixels_x,pixels_y){
-  exec(success,error,"sshClient",'sshResizeWindow',[x,y,pixels_x,pixels_y]);
+  var p_x = pixels_x || 0;
+  var p_y = pixels_y || 0;
+  exec(success,error,"sshClient",'sshResizeWindow',[x,y,p_x,p_y]);
 }
 
 var sshClient = new sshClient();
