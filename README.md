@@ -6,7 +6,7 @@ A Cordova SSH Client Plugin based on Ganymed SSH2.
 
   - Android
 
-##Recomended
+## Recomended
 
 If you're going to use this plugin inside an AngularJS project, we recomend you to install **Angular SSH Client** from [here](https://github.com/R3nPi2/angular-ssh).
 
