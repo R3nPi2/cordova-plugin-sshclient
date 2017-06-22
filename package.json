@@ -14,7 +14,7 @@
       "url" : "https://github.com/R3nPi2/"
     },  
     "repository" : { 
-      "type" : "git"
+      "type" : "git",
       "url" : "https://github.com/R3nPi2/cordova-plugin-sshclient.git"
     },  
     "license": "SEE LICENSE FILE",
