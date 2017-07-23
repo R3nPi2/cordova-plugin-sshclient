@@ -6,7 +6,7 @@ A Cordova SSH Client Plugin based on Ganymed SSH2.
 
   - Android
 
-## Recomended
+##Recomended
 
 If you're going to use this plugin inside an AngularJS project, we recomend you to install **Angular SSH Client** from [here](https://github.com/R3nPi2/angular-ssh).
 
@@ -20,13 +20,14 @@ Take a look at the example on [Angular SSH Client project](https://github.com/R3
 
 ## Methods
 
-### `window.sshClient.sshOpenSession(function(success){...},function(error){...},hostname,username,password,cols,rows,width,height)`
+### `window.sshClient.sshOpenSession(function(success){...},function(error){...},hostname,port,username,password,cols,rows,width,height)`
 
 Connects to host, request a new PTY and starts a Shell.
 
 **Arguments**
 
   - `hostname` – Hostname or IP.
+  - `port` –  SSH port number.
   - `user` – Username.
   - `password` – Password.
   - `cols` – PTY columns.
@@ -36,19 +37,20 @@ Connects to host, request a new PTY and starts a Shell.
 
 **Success response**
 
-  - Returns "0". It means everithing was ok.
+  - Returns `sessionID`: an integer corresponding to session unique identifier.
 
 **Error response**
 
   - Returns a string describing the error.
 
-### `window.sshClient.sshVerifyHost(function(success){...},function(error){...},hostname,saveHostKey)`
+### `window.sshClient.sshVerifyHost(function(success){...},function(error){...},hostname,port,saveHostKey)`
 
 We should use this method to verify hostkeys.
 
 **Arguments**
 
   - `hostname` – Hostname or IP.
+  - `port` – SSH port number.
   - `saveHostKey` – This argument should be a string matching "true" or "false". If "false", the verification should be done but hostkey will not be saved into known\_hosts database. If "true", hostkey should be saved into known\_hosts.
 
 **Success response**
@@ -62,12 +64,13 @@ We should use this method to verify hostkeys.
 
   - Returns a string describing the error.
 
-### `window.sshClient.sshResizeWindow(function(success){...},function(error){...},cols,rows,width,height)`
+### `window.sshClient.sshResizeWindow(function(success){...},function(error){...},sessionID,cols,rows,width,height)`
 
 We can use this method to resize PTY created on `window.sshClient.sshOpenSession`.
 
 **Arguments**
 
+  - `sessionID` – session identifier.
   - `cols` – PTY columns.
   - `rows` – PTY rows.
   - `width` – (optional: if empty, set to 0) PTY pixels width.
@@ -81,9 +84,13 @@ We can use this method to resize PTY created on `window.sshClient.sshOpenSession
 
   - Returns a string describing the error.
 
-### `window.sshClient.sshRead(function(success){...},function(error){...})`
+### `window.sshClient.sshRead(function(success){...},function(error){...},sessionID)`
 
 Read stdout and stderr buffers output.
+
+**Arguments**
+
+  - `sessionID` – session identifier.
 
 **Success response**
 
@@ -93,12 +100,13 @@ Read stdout and stderr buffers output.
 
   - Returns a string describing the error.
 
-### `window.sshClient.sshWrite(function(success){...},function(error){...},string)`
+### `window.sshClient.sshWrite(function(success){...},function(error){...},sessionID,string)`
 
 Write a string to stdin buffer.
 
 **Arguments**
 
+  - `sessionID` – session identifier.
   - `string` – String that will be written to stdin buffer. If you want to send a `ls` command, you should write "ls\n".
 
 **Success response**
@@ -109,13 +117,45 @@ Write a string to stdin buffer.
 
   - Returns a string describing the error.
 
-### `window.sshClient.sshCloseSession(function(success){...},function(error){...})`
+### `window.sshClient.sshCloseSession(function(success){...},function(error){...},sessionID)`
 
 Close ssh session.
+
+**Arguments**
+
+  - `sessionID` – session identifier.
 
 **Success response**
 
   - Returns "0". It means everithing was ok.
+
+**Error response**
+
+  - Returns a string describing the error.
+
+### `window.sshClient.sshSetKnownHosts(function(success){...},function(error){...},knownHosts)`
+
+Pending documentation.
+
+**Arguments**
+
+  - `knownHosts` - A string containing a list of known hosts keys. Formated `known_hosts`-like file.
+
+**Success response**
+
+  - Returns "0". It means everithing was ok.
+
+**Error response**
+
+  - Returns a string describing the error.
+
+### `window.sshClient.sshGetKnownHosts(function(success){...},function(error){...})`
+
+Pending documentation.
+
+**Success response**
+
+  - Returns a string corresponding to `known_hosts` file. One host per line.
 
 **Error response**
 

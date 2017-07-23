@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.File;
+import java.io.FileReader;
+import java.io.PrintWriter;
+import java.io.BufferedReader;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.Session;
@@ -29,6 +32,7 @@ import ch.ethz.ssh2.KnownHosts;
 import ch.ethz.ssh2.InteractiveCallback;
 import ch.ethz.ssh2.ServerHostKeyVerifier;
 import ch.ethz.ssh2.ChannelCondition;
+import ch.ethz.ssh2.ConnectionMonitor;
 
 public class sshClient extends CordovaPlugin {
  
@@ -39,17 +43,15 @@ public class sshClient extends CordovaPlugin {
   public String filesDir;
   public String verifyMsg;
   public boolean addHost;
-  public String hostname;
-  public String username;
-  private Connection conn;
-  private Session sess;
   KnownHosts database = new KnownHosts();
 
-  private int x;
-  private int y;
-  private InputStream in;
-  private OutputStream out;
-  private InputStream err;
+  private Connection[] connections = new Connection[100];
+  private ConnectionMonitor[] connectionMonitors = new ConnectionMonitor[100];
+  private boolean[] emptyConnections = new boolean[100];
+  private Session[] sessions = new Session[100];
+  private InputStream[] inputs = new InputStream[100];
+  private OutputStream[] outputs = new OutputStream[100];
+  private InputStream[] errors = new InputStream[100];
  
   /**
   * Constructor.
@@ -71,16 +73,30 @@ public class sshClient extends CordovaPlugin {
     activity = cordova.getActivity();
     context = activity.getApplicationContext();
     filesDir = context.getFilesDir().getAbsolutePath();
+    for (int i = 0; i < emptyConnections.length; i++) {
+      emptyConnections[i] = true;
+    }
   }
 
-  private String readOutput () {
+  private int newConnectionID () {
+    boolean found = false;
+    for (int i = 0; i < emptyConnections.length; i++) {
+      if (emptyConnections[i] == true) {
+        return i;
+      }
+    }
+    // Not available connections
+    return -1;
+  }
+
+  private String readOutput (int sessionID) {
 
     byte[] buff = new byte[8192];
 
     try
     {
-      while (in.available() > 0) {
-        int len = in.read(buff);
+      while (inputs[sessionID].available() > 0) {
+        int len = inputs[sessionID].read(buff);
         if (len == -1) {
           return "";
         } else {
@@ -96,7 +112,7 @@ public class sshClient extends CordovaPlugin {
     }
     catch (Exception e)
     {
-      Log.v(TAG,"readOutput error: "+e.toString());
+      Log.v(TAG,"sshReadOutput error: "+e.toString());
     }
     return "";
   }
@@ -147,7 +163,9 @@ public class sshClient extends CordovaPlugin {
       
       } else {
 
-        String hashedHostname = KnownHosts.createHashedHostname(hostname);
+        //We don't want it hashed to look for it later.
+        //String hashedHostname = KnownHosts.createHashedHostname(hostname);
+        String hashedHostname = hostname;
 
         database.addHostkey(new String[] { hashedHostname }, serverHostKeyAlgorithm, serverHostKey);
 
@@ -171,11 +189,12 @@ public class sshClient extends CordovaPlugin {
   public boolean execute(final String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
          
     if ("sshRead".equals(action)) {
+      final int sessionID = Integer.parseInt(args.getString(0));
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
             try {
-              String resp = readOutput();
-              int conditions = sess.waitForCondition(ChannelCondition.STDOUT_DATA, 100);
+              String resp = readOutput(sessionID);
+              int conditions = sessions[sessionID].waitForCondition(ChannelCondition.STDOUT_DATA, 100);
               PluginResult result = new PluginResult(PluginResult.Status.OK, resp);
               result.setKeepCallback(true);
               callbackContext.sendPluginResult(result);
@@ -191,13 +210,14 @@ public class sshClient extends CordovaPlugin {
     }
 
     if ("sshWrite".equals(action)) {
-      final String command = args.getString(0);
+      final int sessionID = Integer.parseInt(args.getString(0));
+      final String command = args.getString(1);
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
             try {
               byte[] cmd = command.getBytes("UTF-8");
-              out.write(cmd);
-              int conditions = sess.waitForCondition(ChannelCondition.STDOUT_DATA,100);
+              outputs[sessionID].write(cmd);
+              int conditions = sessions[sessionID].waitForCondition(ChannelCondition.STDOUT_DATA,100);
               PluginResult result = new PluginResult(PluginResult.Status.OK, command);
               result.setKeepCallback(true);
               callbackContext.sendPluginResult(result);
@@ -214,15 +234,16 @@ public class sshClient extends CordovaPlugin {
     }
 
     if ("sshResizeWindow".equals(action)) {
-      x = Integer.parseInt(args.getString(0));
-      y = Integer.parseInt(args.getString(1));
-      final Integer pixels_x = Integer.parseInt(args.getString(2));
-      final Integer pixels_y = Integer.parseInt(args.getString(3));
+      final int sessionID = Integer.parseInt(args.getString(0));
+      final int cols = Integer.parseInt(args.getString(1));
+      final int rows = Integer.parseInt(args.getString(2));
+      final int width = Integer.parseInt(args.getString(3));
+      final int height = Integer.parseInt(args.getString(4));
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
-          String resp = Integer.toString(x)+"x"+Integer.toString(y)+" "+Integer.toString(pixels_x)+"x"+Integer.toString(pixels_y);
+          String resp = Integer.toString(cols)+"x"+Integer.toString(rows)+" "+Integer.toString(width)+"x"+Integer.toString(height);
           try {
-            sess.requestWindowChange(x, y, pixels_x, pixels_y);
+            sessions[sessionID].requestWindowChange(cols,rows,width,height);
           } catch (IOException e) {
             Log.v(TAG,"sshResizeWindow error: "+e.toString());
             PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
@@ -238,31 +259,34 @@ public class sshClient extends CordovaPlugin {
     }
 
     if ("sshCloseSession".equals(action)) {
+      final int sessionID = Integer.parseInt(args.getString(0));
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
           try  {
-            in.close();
+            inputs[sessionID].close();
           } catch (IOException e) {
             Log.v(TAG,"sshCloseSession error: "+e.toString());
           }
           try  {
-            out.flush();
+            outputs[sessionID].flush();
           } catch (IOException e) {
             Log.v(TAG,"sshCloseSession error: "+e.toString());
           }
           try  {
-            out.close();
+            outputs[sessionID].close();
           } catch (IOException e) {
             Log.v(TAG,"sshCloseSession error: "+e.toString());
           }
           try  {
-            err.close();
+            errors[sessionID].close();
           } catch (IOException e) {
             Log.v(TAG,"sshCloseSession error: "+e.toString());
           }
 
-          sess.close();
-          conn.close();
+          sessions[sessionID].close();
+          connections[sessionID].close();
+
+          emptyConnections[sessionID] = true;
 
           PluginResult result = new PluginResult(PluginResult.Status.OK, "0");
           result.setKeepCallback(true);
@@ -274,8 +298,9 @@ public class sshClient extends CordovaPlugin {
 
     if ("sshVerifyHost".equals(action)) {
 
-      hostname = args.getString(0);
-      final String strAddHost = args.getString(1);
+      final String hostname = args.getString(0);
+      final int port = Integer.parseInt(args.getString(1));
+      final String strAddHost = args.getString(2);
 
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
@@ -298,58 +323,52 @@ public class sshClient extends CordovaPlugin {
             }
           } 
 
-          conn = new Connection(hostname);
+          Connection dummyConnection = new Connection(hostname,port);
 
           String[] hostkeyAlgos = database.getPreferredServerHostkeyAlgorithmOrder(hostname);
 
           if (hostkeyAlgos != null) {
-            conn.setServerHostKeyAlgorithms(hostkeyAlgos);
+            dummyConnection.setServerHostKeyAlgorithms(hostkeyAlgos);
           }
 
           try {   
 
-            conn.connect(new AdvancedVerifier());
+            dummyConnection.connect(new AdvancedVerifier());
+
+            dummyConnection.close();
 
             PluginResult result = new PluginResult(PluginResult.Status.OK, verifyMsg);
             result.setKeepCallback(true);
             callbackContext.sendPluginResult(result);
-
-            conn.close();
 
           } catch (IOException e2) {
 
             //We are going to try verify 3 times becuse I get error: Illegal packet size (1869636974) so often.
 
             Log.v(TAG,"sshVerifyHost error2: "+e2.getMessage());
-            //PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
-            //result.setKeepCallback(true);
-            //callbackContext.sendPluginResult(result);
 
             try {   
 
-              conn.connect(new AdvancedVerifier());
+              dummyConnection.connect(new AdvancedVerifier());
+
+              dummyConnection.close();
   
               PluginResult result = new PluginResult(PluginResult.Status.OK, verifyMsg);
               result.setKeepCallback(true);
               callbackContext.sendPluginResult(result);
 
-              conn.close();
-
             } catch (IOException e3) {
 
               Log.v(TAG,"sshVerifyHost error3: "+e3.getMessage());
-              //PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
-              //result.setKeepCallback(true);
-              //callbackContext.sendPluginResult(result);
               try {   
 
-                conn.connect(new AdvancedVerifier());
+                dummyConnection.connect(new AdvancedVerifier());
+
+                dummyConnection.close();
 
                 PluginResult result = new PluginResult(PluginResult.Status.OK, verifyMsg);
                 result.setKeepCallback(true);
                 callbackContext.sendPluginResult(result);
-
-                conn.close();
 
               } catch (IOException e4) {
 
@@ -365,7 +384,6 @@ public class sshClient extends CordovaPlugin {
           }
 
           PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Unknown error");
-          //PluginResult result = new PluginResult(PluginResult.Status.OK, "-1");
           result.setKeepCallback(true);
           callbackContext.sendPluginResult(result);
         }
@@ -375,6 +393,7 @@ public class sshClient extends CordovaPlugin {
     }
 
     if ("sshOpenSession".equals(action)) {
+
       File knownHostFile = new File(knownHostPath);
       if (knownHostFile.exists())
       {
@@ -388,37 +407,59 @@ public class sshClient extends CordovaPlugin {
         }
       }
 
-      hostname = args.getString(0);
-      username = args.getString(1);
-      final String password = args.getString(2);
-      x = Integer.parseInt(args.getString(3));
-      y = Integer.parseInt(args.getString(4));
-      final Integer pixels_x = Integer.parseInt(args.getString(5));
-      final Integer pixels_y = Integer.parseInt(args.getString(6));
+      final String hostname = args.getString(0);
+      final int port = Integer.parseInt(args.getString(1));
+      final String username = args.getString(2);
+      final String password = args.getString(3);
+      final int cols = Integer.parseInt(args.getString(4));
+      final int rows = Integer.parseInt(args.getString(5));
+      final int width = Integer.parseInt(args.getString(6));
+      final int height = Integer.parseInt(args.getString(7));
+
       cordova.getThreadPool().execute(new Runnable() {
         public void run() {
           try {
-            conn = new Connection(hostname);
-            conn.connect();
-            conn.setTCPNoDelay(true);
-            boolean isAuthenticated = conn.authenticateWithPassword(username, password);
+            int connectionID = newConnectionID();
+            if (connectionID < 0) {
+              PluginResult result = new PluginResult(PluginResult.Status.ERROR, "No more connections available");
+              result.setKeepCallback(true);
+              callbackContext.sendPluginResult(result);
+            }
+            emptyConnections[connectionID] = false;
+            connections[connectionID] = new Connection(hostname,port);
+            /*
+            connections[connectionID].addConnectionMonitor(new ConnectionMonitor()
+            {            
+              @Override
+              public void connectionLost(Throwable reason)
+              {
+                Log.v(TAG,"sshConnectionLost: "+reason.getMessage());
+              }
+            });
+            */
+            connections[connectionID].connect();
+            connections[connectionID].setTCPNoDelay(true);
+            boolean isAuthenticated = connections[connectionID].authenticateWithPassword(username, password);
             if (isAuthenticated == false) {
+              emptyConnections[connectionID] = true;
               PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Authentication failed");
               result.setKeepCallback(true);
               callbackContext.sendPluginResult(result);
             } else {
-              sess = conn.openSession();
-              in = sess.getStdout();
-              out = sess.getStdin();
-              err = sess.getStderr();
+              sessions[connectionID] = connections[connectionID].openSession();
+              inputs[connectionID] = sessions[connectionID].getStdout();
+              outputs[connectionID] = sessions[connectionID].getStdin();
+              errors[connectionID] = sessions[connectionID].getStderr();
               try {
-                sess.requestPTY("vt100", x, y, pixels_x, pixels_y, null);
-                sess.startShell();
-                int conditions = sess.waitForCondition(ChannelCondition.STDOUT_DATA, 1000);
-                PluginResult result = new PluginResult(PluginResult.Status.OK, "0");
+                sessions[connectionID].requestPTY("vt100", cols, rows, width, height, null);
+                sessions[connectionID].startShell();
+                int conditions = sessions[connectionID].waitForCondition(ChannelCondition.STDOUT_DATA, 1000);
+
+                PluginResult result = new PluginResult(PluginResult.Status.OK, Integer.toString(connectionID));
                 result.setKeepCallback(true);
                 callbackContext.sendPluginResult(result);
               } catch (Exception e) {
+                emptyConnections[connectionID] = true;
                 Log.v(TAG,"sshOpenSession error2: \n"+e.toString());
                 PluginResult result = new PluginResult(PluginResult.Status.ERROR, e.getMessage());
                 result.setKeepCallback(true);
@@ -435,6 +476,109 @@ public class sshClient extends CordovaPlugin {
           result.setKeepCallback(true);
           callbackContext.sendPluginResult(result);
         }
+      });
+      return true;
+    }
+
+    if ("sshGetKnownHosts".equals(action)) {
+
+      cordova.getThreadPool().execute(new Runnable() {
+        public void run() {
+
+          knownHostPath = filesDir + "/known_hosts";
+
+          String known_hosts = "";
+
+          try {
+
+            BufferedReader br = new BufferedReader(new FileReader(knownHostPath));
+            String line = null;
+            try {
+              while ((line = br.readLine()) != null) {
+                known_hosts += line+"\n";
+              }
+
+              PluginResult result = new PluginResult(PluginResult.Status.OK, known_hosts);
+              result.setKeepCallback(true);
+              callbackContext.sendPluginResult(result);
+
+            } catch (IOException e) {
+              PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Cannot read known_hosts file.");
+              result.setKeepCallback(true);
+              callbackContext.sendPluginResult(result);           
+            }
+
+          } catch (IOException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Cannot open known_hosts file.");
+            result.setKeepCallback(true);
+            callbackContext.sendPluginResult(result);
+          }
+
+        }
+
+      });
+      return true;
+    }
+
+    if ("sshSetKnownHosts".equals(action)) {
+
+      final String keys = args.getString(0);
+
+      cordova.getThreadPool().execute(new Runnable() {
+        public void run() {
+
+          knownHostPath = filesDir + "/known_hosts";
+
+          try {
+            PrintWriter known_hosts_writer = new PrintWriter(knownHostPath);
+            known_hosts_writer.print("");
+            known_hosts_writer.close();
+          } catch (IOException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Cannot open known_hosts for clearing.");
+            result.setKeepCallback(true);
+            callbackContext.sendPluginResult(result);           
+          }
+
+          try {
+            PrintWriter known_hosts_writer = new PrintWriter(knownHostPath);
+            known_hosts_writer.print(keys);
+            known_hosts_writer.close();
+            database = new KnownHosts();
+          } catch (IOException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Cannot open known_hosts for writing.");
+            result.setKeepCallback(true);
+            callbackContext.sendPluginResult(result);           
+          }
+
+          String known_hosts = "";
+
+          try {
+
+            BufferedReader br = new BufferedReader(new FileReader(knownHostPath));
+            String line = null;
+            try {
+              while ((line = br.readLine()) != null) {
+                known_hosts += line+"\n";
+              }
+
+              PluginResult result = new PluginResult(PluginResult.Status.OK, known_hosts);
+              result.setKeepCallback(true);
+              callbackContext.sendPluginResult(result);
+
+            } catch (IOException e) {
+              PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Cannot read known_hosts file.");
+              result.setKeepCallback(true);
+              callbackContext.sendPluginResult(result);           
+            }
+
+          } catch (IOException e) {
+            PluginResult result = new PluginResult(PluginResult.Status.ERROR, "Cannot open known_hosts file.");
+            result.setKeepCallback(true);
+            callbackContext.sendPluginResult(result);
+          }
+
+        }
+
       });
       return true;
     }

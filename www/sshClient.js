@@ -9,27 +9,33 @@ var exec = require('cordova/exec');
 function sshClient() { 
 }
 
-sshClient.prototype.sshOpenSession = function(success,error,hostname,username,password,cols,rows,width,height){
+sshClient.prototype.sshOpenSession = function(success,error,hostname,port,username,password,cols,rows,width,height){
   var width = width || 0;
   var height = height || 0;
-  exec(success,error,"sshClient",'sshOpenSession',[hostname,username,password,cols,rows,width,height]);
+  exec(success,error,"sshClient",'sshOpenSession',[hostname,port,username,password,cols,rows,width,height]);
 }
-sshClient.prototype.sshCloseSession = function(success,error){
-  exec(success,error,"sshClient",'sshCloseSession',[]);
+sshClient.prototype.sshCloseSession = function(success,error,sessionID){
+  exec(success,error,"sshClient",'sshCloseSession',[sessionID]);
 }
-sshClient.prototype.sshVerifyHost = function(success,error,hostname,addhost){
-  exec(success,error,"sshClient",'sshVerifyHost',[hostname,addhost]);
+sshClient.prototype.sshVerifyHost = function(success,error,hostname,port,addhost){
+  exec(success,error,"sshClient",'sshVerifyHost',[hostname,port,addhost]);
 }
-sshClient.prototype.sshRead = function(success,error){
-  exec(success,error,"sshClient",'sshRead',[]);
+sshClient.prototype.sshRead = function(success,error,sessionID){
+  exec(success,error,"sshClient",'sshRead',[sessionID]);
 }
-sshClient.prototype.sshWrite = function(success,error,line){
-  exec(success,error,"sshClient",'sshWrite',[line]);
+sshClient.prototype.sshWrite = function(success,error,sessionID,line){
+  exec(success,error,"sshClient",'sshWrite',[sessionID,line]);
 }
-sshClient.prototype.sshResizeWindow = function(success,error,cols,rows,width,height){
+sshClient.prototype.sshResizeWindow = function(success,error,sessionID,cols,rows,width,height){
   var width = width || 0;
   var height = height || 0;
-  exec(success,error,"sshClient",'sshResizeWindow',[cols,rows,width,height]);
+  exec(success,error,"sshClient",'sshResizeWindow',[sessionID,cols,rows,width,height]);
+}
+sshClient.prototype.sshGetKnownHosts = function(success,error){
+  exec(success,error,"sshClient",'sshGetKnownHosts',[]);
+}
+sshClient.prototype.sshSetKnownHosts = function(success,error,known_hosts){
+  exec(success,error,"sshClient",'sshSetKnownHosts',[known_hosts]);
 }
 
 var sshClient = new sshClient();

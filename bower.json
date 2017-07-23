@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-sshclient",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "homepage": "https://github.com/R3nPi2/cordova-plugin-sshclient",
   "authors": [
     { "name" : "R3n Pi2", "email" : "r3npi2@gmail.com", "homepage" : "https://github.com/R3nPi2/" }

@@ -1,5 +1,5 @@
 {
-    "version": "0.1.1",
+    "version": "0.2.0",
     "name": "cordova-plugin-sshclient",
     "cordova_name": "Cordova SSH Client Plugin",
     "description": "A Cordova SSH Client Plugin based on Ganymed SSH2",
@@ -25,7 +25,7 @@
         "ssh client"
     ],
     "platforms": [
-        "android",
+        "android"
     ],
     "engines": [],
     "englishdoc": ""
